@@ -14,9 +14,11 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
+#include <time.h>
 
 void callback(char*, byte*, unsigned int);
 void tratarJson(String);
+
 
 const char *ssid = "SENAI EDUCACIONAL";
 const char *password = "info@134";
@@ -33,6 +35,14 @@ void setup()
 {
   Serial.begin(115200);
   WiFi.begin(ssid, password);
+
+  configTime(-3 * 3600, 0, "a.st1.ntp.br", "pool.ntp.org");
+  struct tm time;
+  getLocalTime(&time) ? Serial.println("Horario sincronizado") : Serial.println("Erro ao sincronizar");
+  
+
+
+
 
   while (WiFi.status() != WL_CONNECTED)
   {
