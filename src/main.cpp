@@ -87,7 +87,6 @@ void loop()
       String message;
       serializeJson(doc, message);
 
-
     }
 
 
