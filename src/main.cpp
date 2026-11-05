@@ -10,43 +10,118 @@
 //* - Botão                                    |
 //*============================================|
 
-
-
 #include <Arduino.h>
-#include <wiFi.h>
+#include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 
-const char* ssid = "SENAI EDUCAIONAL";
-const char* password = "info@134";
+void callback(char*, byte, unsigned int);
+void tratarJson(String);
+
+const char *ssid = "SENAI EDUCACIONAL";
+const char *password = "info@134";
+const char *BROKER = "broker.emqx.io";
+const int PORTA = 1883;
+const char *TOPICO_SUB = "senai134/esp32/SmartPet/comando"; //* onde envio o comando
+const char *TOPICO_PUB = "senai134/esp32/SmartPet/status";  //* onde ele vai escutar o status
 
 WiFiClient espClient;
 PubSubClient mqtt(espClient);
 
-
-void setup() {
+void setup()
+{
   Serial.begin(115200);
   WiFi.begin(ssid, password);
 
-  if (WL_CONNECTED)
+  while (WiFi.status() != WL_CONNECTED)
   {
-    Serial.println("Conectado com sucesso!");
+    Serial.print(".");
+    delay(500);
+  }
+
+  Serial.println("Conectado com sucesso.");
+  Serial.printf("Conectando ao broker\n\r", BROKER);
+
+  mqtt.setServer(BROKER, PORTA);
+  mqtt.setCallback(callback);
+
+  String id = "esp32-" + String((uint32_t)ESP.getEfuseMac(), HEX);
+  Serial.printf("Id do dispositivo: %s \n\r", id.c_str());
+
+  bool conectadoAoBroker;
+  conectadoAoBroker = mqtt.connect(id.c_str());
+
+  if (conectadoAoBroker)
+  {
+    Serial.printf("Conectado ao Broker com sucesso.");
+    mqtt.subscribe(TOPICO_SUB);
+    Serial.printf("Tópico: %s", TOPICO_SUB);
   }
   else
   {
-    Serial.println("Falha na conexão!");
-    Serial.println(WiFi.status());
+    Serial.printf("Erro ao conectar: %s\n\r", BROKER);
+    Serial.print("Falha: ");
+    Serial.print(mqtt.state());
   }
-  
 }
 
-void loop() {
+void loop()
+{
   mqtt.loop();
+
+    unsigned long interval = 3 * 60 * 60 * 1000; 
+    unsigned long currentMillis = millis();
+    static unsigned long lastMillis = 0;
+
+    if (currentMillis - lastMillis >= interval)
+    {
+      lastMillis = currentMillis;
+
+      JsonDocument doc;
+
+      doc["ledState"] = true;
+      doc["foodState"] = true;
+      doc["lastFeedingTime"] = "14:30";
+      doc["nextFeedingTime"] = "18:00";
+
+      String message;
+      serializeJson(doc, message);
+
+
+    }
+
+
 }
+
+void callback(char *topic, byte *payload, unsigned int length)
+{
+  Serial.print("Mensagem recebida no tópico: ");
+  Serial.println(topic);
+
+  String message;
+  for (int i = 0; i < length; i++)
+  {
+    message += (char)payload[i];
+  }
+
+  Serial.printf("Mensagem: %s\n\r", message.c_str());
+  tratarJson(message);
+}
+
 
 void tratarJson(String message)
 {
   JsonDocument doc;
   DeserializationError error = deserializeJson(doc, message);
+
+
+  if (error)
+  {
+    Serial.print("Erro ao desserializar o JSON: ");
+    Serial.println(error.c_str());
+    return;
+  }
+  bool ledState = doc["ledState"].as<bool>();
+  bool foodState = doc["foodState"].as<bool>();
 
 }
