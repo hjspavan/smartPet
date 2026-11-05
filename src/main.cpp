@@ -15,7 +15,7 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 
-void callback(char*, byte, unsigned int);
+void callback(char*, byte*, unsigned int);
 void tratarJson(String);
 
 const char *ssid = "SENAI EDUCACIONAL";
@@ -24,6 +24,7 @@ const char *BROKER = "broker.emqx.io";
 const int PORTA = 1883;
 const char *TOPICO_SUB = "senai134/esp32/SmartPet/comando"; //* onde envio o comando
 const char *TOPICO_PUB = "senai134/esp32/SmartPet/status";  //* onde ele vai escutar o status
+String id;
 
 WiFiClient espClient;
 PubSubClient mqtt(espClient);
@@ -45,7 +46,7 @@ void setup()
   mqtt.setServer(BROKER, PORTA);
   mqtt.setCallback(callback);
 
-  String id = "esp32-" + String((uint32_t)ESP.getEfuseMac(), HEX);
+  id = "esp32-" + String((uint32_t)ESP.getEfuseMac(), HEX);
   Serial.printf("Id do dispositivo: %s \n\r", id.c_str());
 
   bool conectadoAoBroker;
@@ -87,6 +88,24 @@ void loop()
       String message;
       serializeJson(doc, message);
 
+    }
+
+    if (mqtt.connected())
+    {
+      Serial.println("Conectado ao broker MQTT.");
+      mqtt.subscribe(TOPICO_SUB);
+    } else
+    {
+      Serial.print("Desconectado. tentando reconectar...");
+      if (mqtt.connect(id.c_str()))
+      {
+        Serial.println("Reconectado ao broker MQTT.");
+        mqtt.subscribe(TOPICO_SUB);
+      } else
+      {
+        Serial.print("Falha ao reconectar. Estado: ");
+        Serial.println(mqtt.state());
+      }
     }
 
 
