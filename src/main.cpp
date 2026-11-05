@@ -41,7 +41,7 @@ void setup()
   }
 
   Serial.println("Conectado com sucesso.");
-  Serial.printf("Conectando ao broker\n\r", BROKER);
+  Serial.printf("\n\rConectando ao broker %s", BROKER);
 
   mqtt.setServer(BROKER, PORTA);
   mqtt.setCallback(callback);
@@ -56,41 +56,17 @@ void setup()
   {
     Serial.printf("Conectado ao Broker com sucesso.");
     mqtt.subscribe(TOPICO_SUB);
-    Serial.printf("Tópico: %s", TOPICO_SUB);
+    Serial.printf("\n\rTópico: %s", TOPICO_SUB);
   }
   else
   {
     Serial.printf("Erro ao conectar: %s\n\r", BROKER);
     Serial.print("Falha: ");
     Serial.print(mqtt.state());
+
   }
-}
 
-void loop()
-{
-  mqtt.loop();
-
-    unsigned long interval = 3 * 60 * 60 * 1000; 
-    unsigned long currentMillis = millis();
-    static unsigned long lastMillis = 0;
-
-    if (currentMillis - lastMillis >= interval)
-    {
-      lastMillis = currentMillis;
-
-      JsonDocument doc;
-
-      doc["ledState"] = true;
-      doc["foodState"] = true;
-      doc["lastFeedingTime"] = "14:30";
-      doc["nextFeedingTime"] = "18:00";
-
-      String message;
-      serializeJson(doc, message);
-
-    }
-
-    if (mqtt.connected())
+      if (mqtt.connected())
     {
       Serial.println("Conectado ao broker MQTT.");
       mqtt.subscribe(TOPICO_SUB);
@@ -107,6 +83,43 @@ void loop()
         Serial.println(mqtt.state());
       }
     }
+}
+
+void loop()
+{
+  mqtt.loop();
+
+    unsigned long interval = 5000; 
+    unsigned long currentMillis = millis();
+    static unsigned long lastMillis = 0;
+
+if (currentMillis - lastMillis >= interval)
+{
+    lastMillis = currentMillis;
+
+    if (mqtt.connected())
+    {
+        JsonDocument doc;
+
+        doc["ledState"] = true;
+        doc["foodState"] = true;
+        doc["lastFeedingTime"] = "14:30";
+        doc["nextFeedingTime"] = "18:00";
+
+        String message;
+        serializeJson(doc, message);
+
+        if (mqtt.publish(TOPICO_PUB, message.c_str()))
+        {
+            Serial.println("Status do pet publicado!");
+            Serial.println(message);
+        }
+        else
+        {
+            Serial.println("Erro ao publicar status!");
+        }
+    }
+}
 
 
 }
@@ -135,8 +148,7 @@ void tratarJson(String message)
 
   if (error)
   {
-    Serial.print("Erro ao desserializar o JSON: ");
-    Serial.println(error.c_str());
+    Serial.printf("Erro ao desserializar o JSON: %s\n\r", error.c_str());
     return;
   }
   bool ledState = doc["ledState"].as<bool>();
