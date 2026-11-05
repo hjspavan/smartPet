@@ -16,9 +16,8 @@
 #include <ArduinoJson.h>
 #include <time.h>
 
-void callback(char*, byte*, unsigned int);
+void callback(char *, byte *, unsigned int);
 void tratarJson(String);
-
 
 const char *ssid = "SENAI EDUCACIONAL";
 const char *password = "info@134";
@@ -37,12 +36,6 @@ void setup()
   WiFi.begin(ssid, password);
 
   configTime(-3 * 3600, 0, "a.st1.ntp.br", "pool.ntp.org");
-  struct tm time;
-  getLocalTime(&time) ? Serial.println("Horario sincronizado") : Serial.println("Erro ao sincronizar");
-  
-
-
-
 
   while (WiFi.status() != WL_CONNECTED)
   {
@@ -73,65 +66,75 @@ void setup()
     Serial.printf("Erro ao conectar: %s\n\r", BROKER);
     Serial.print("Falha: ");
     Serial.print(mqtt.state());
-
   }
 
-      if (mqtt.connected())
+  if (mqtt.connected())
+  {
+    Serial.println("Conectado ao broker MQTT.");
+    mqtt.subscribe(TOPICO_SUB);
+  }
+  else
+  {
+    Serial.print("Desconectado. tentando reconectar...");
+    if (mqtt.connect(id.c_str()))
     {
-      Serial.println("Conectado ao broker MQTT.");
+      Serial.println("Reconectado ao broker MQTT.");
       mqtt.subscribe(TOPICO_SUB);
-    } else
-    {
-      Serial.print("Desconectado. tentando reconectar...");
-      if (mqtt.connect(id.c_str()))
-      {
-        Serial.println("Reconectado ao broker MQTT.");
-        mqtt.subscribe(TOPICO_SUB);
-      } else
-      {
-        Serial.print("Falha ao reconectar. Estado: ");
-        Serial.println(mqtt.state());
-      }
     }
+    else
+    {
+      Serial.print("Falha ao reconectar. Estado: ");
+      Serial.println(mqtt.state());
+    }
+  }
 }
 
 void loop()
 {
   mqtt.loop();
 
-    unsigned long interval = 5000; 
-    unsigned long currentMillis = millis();
-    static unsigned long lastMillis = 0;
+  unsigned long interval = 5000;
+  unsigned long currentMillis = millis();
+  static unsigned long lastMillis = 0;
 
-if (currentMillis - lastMillis >= interval)
-{
+  if (currentMillis - lastMillis >= interval)
+  {
     lastMillis = currentMillis;
 
     if (mqtt.connected())
     {
-        JsonDocument doc;
+      struct tm timeinfo;
 
-        doc["ledState"] = true;
-        doc["foodState"] = true;
-        doc["lastFeedingTime"] = "14:30";
-        doc["nextFeedingTime"] = "18:00";
+      if (getLocalTime(&timeinfo))
+      {
+        char horario[6];
 
-        String message;
-        serializeJson(doc, message);
+        strftime(horario, sizeof(horario), "%H:%M", &timeinfo);
 
-        if (mqtt.publish(TOPICO_PUB, message.c_str()))
-        {
-            Serial.println("Status do pet publicado!");
-            Serial.println(message);
-        }
-        else
-        {
-            Serial.println("Erro ao publicar status!");
-        }
+        Serial.println(horario);
+      
+      JsonDocument doc;
+
+      doc["ledState"] = true;
+      doc["foodState"] = true;
+      doc["lastFeedingTime"] = horario;
+      doc["nextFeedingTime"] = horario + 3*60*60; // Adiciona 3 horas ao horário atual
+
+      String message;
+      serializeJson(doc, message);
+
+      if (mqtt.publish(TOPICO_PUB, message.c_str()))
+      {
+        Serial.println("Status do pet publicado!");
+        Serial.println(message);
+      }
+      else
+      {
+        Serial.println("Erro ao publicar status!");
+      }
     }
-}
-
-
+  }
+ }
 }
 
 void callback(char *topic, byte *payload, unsigned int length)
@@ -149,12 +152,10 @@ void callback(char *topic, byte *payload, unsigned int length)
   tratarJson(message);
 }
 
-
 void tratarJson(String message)
 {
   JsonDocument doc;
   DeserializationError error = deserializeJson(doc, message);
-
 
   if (error)
   {
@@ -163,5 +164,4 @@ void tratarJson(String message)
   }
   bool ledState = doc["ledState"].as<bool>();
   bool foodState = doc["foodState"].as<bool>();
-
 }
