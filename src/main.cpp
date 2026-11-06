@@ -18,6 +18,7 @@
 #include <Botao.h>
 
 
+void publishStatus();
 
 const char *ssid = "SENAI EDUCACIONAL";
 const char *password = "info@134";
@@ -57,8 +58,7 @@ void setup()
   if (conectadoAoBroker)
   {
     Serial.printf("Conectado ao Broker com sucesso.");
-    mqtt.subscribe(TOPICO_SUB);
-    Serial.printf("\n\rTópico: %s", TOPICO_SUB);
+    Serial.printf("\n\rTópico: %s", TOPICO_PUB);
   }
   else
   {
@@ -80,8 +80,16 @@ void loop()
   if (currentMillis - lastMillis >= interval)
   {
     lastMillis = currentMillis;
+    publishStatus();
+ }
+ 
+}
 
-    if (mqtt.connected())
+
+
+void publishStatus()
+{
+   if (mqtt.connected())
     {
       struct tm timeinfo;
 
@@ -105,7 +113,7 @@ void loop()
       doc["ledState"] = true;
       doc["foodState"] = true;
       doc["lastFeedingTime"] = horario;
-      doc["nextFeedingTime"] = horarioNextFeeding; // Adiciona 3 horas ao horário atual
+      doc["nextFeedingTime"] = horarioNextFeeding; 
 
       String message;
       serializeJson(doc, message);
@@ -122,8 +130,4 @@ void loop()
       }
     }
   }
- }
 }
-
-
-
