@@ -136,6 +136,8 @@ void publishStatus()
         unsigned int currentMillis = millis();
     static unsigned long lastMillis = 0;
 
+
+    //* alterando o estado do led e do alimentador a cada 10 segundos
     if (currentMillis - lastMillis >= 10000)
     {
         lastMillis = currentMillis;
