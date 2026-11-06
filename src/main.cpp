@@ -40,7 +40,7 @@ void setup()
     configTime(-3 * 3600, 0, "a.st1.ntp.br", "pool.ntp.org");
 
     mqtt.setServer(BROKER, PORTA);
-    mqtt.setCallback(callback);
+    
 
     id = "esp32-" + String((uint32_t)ESP.getEfuseMac(), HEX);
 
@@ -74,6 +74,8 @@ void loop()
             publishStatus();
         }
     }
+
+  
 }
 
 void conectMQTT()
@@ -130,6 +132,19 @@ void publishStatus()
     doc["foodState"] = true;
     doc["lastFeedingTime"] = horario;
     doc["nextFeedingTime"] = horarioNextFeeding;
+
+        unsigned int currentMillis = millis();
+    static unsigned long lastMillis = 0;
+
+    if (currentMillis - lastMillis >= 10000)
+    {
+        lastMillis = currentMillis;
+
+        doc["ledState"] = !doc["ledState"].as<bool>();
+        doc["foodState"] = !doc["foodState"].as<bool>();
+    }
+
+    
 
     String message;
 
