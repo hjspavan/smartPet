@@ -4,11 +4,11 @@ O SmartPet é um projeto acadêmico desenvolvido utilizando ESP32, com o objetiv
 
 O projeto utiliza comunicação MQTT para transmitir informações entre dispositivos ESP32, permitindo compartilhar estados, horários de alimentação e comandos por meio de um broker.
 
-## 🎯 Objetivo
+##  Objetivo
 
 Desenvolver um sistema IoT capaz de monitorar e controlar informações relacionadas à alimentação de um pet, utilizando comunicação sem fio e troca de dados em formato JSON.
 
-## ⚙️ Componentes utilizados
+##  Componentes utilizados
 
 - ESP32
 - LED
@@ -17,7 +17,7 @@ Desenvolver um sistema IoT capaz de monitorar e controlar informações relacion
 - Protoboard
 - Jumpers
 
-## 💻 Tecnologias e bibliotecas
+##  Tecnologias e bibliotecas
 
 | Tecnologia | Função |
 |---|---|
@@ -29,7 +29,7 @@ Desenvolver um sistema IoT capaz de monitorar e controlar informações relacion
 | NTP | Sincronização de horário |
 | LiquidCrystal I2C | Controle do display LCD |
 
-## 🌐 Comunicação MQTT
+##  Comunicação MQTT
 
 O projeto utiliza o protocolo MQTT, baseado no modelo Publisher/Subscriber.
 
