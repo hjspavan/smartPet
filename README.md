@@ -35,7 +35,7 @@ Desenvolver um sistema IoT capaz de monitorar e controlar informações relacion
 
 O projeto utiliza o protocolo MQTT, baseado no modelo Publisher/Subscriber.
 
-A comunicação acontece por meio de um broker, responsável por receber as mensagens dos dispositivos e encaminhá-las aos clientes inscritos nos respectivos tópicos.
+ comunicação acontece por meio de um broker, responsável por receber as mensagens dos dispositivos e encaminhá-las aos clientes inscritos nos respectivos tópicos.
 
 **Broker utilizado:**
 - Endereço: `broker.emqx.io`
