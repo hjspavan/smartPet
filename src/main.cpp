@@ -4,7 +4,7 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <time.h>
-#include <Botao.h>
+
 
 const char *ssid = "SENAI EDUCACIONAL";
 const char *password = "info@134";
@@ -145,8 +145,6 @@ void publishStatus()
         doc["ledState"] = !doc["ledState"].as<bool>();
         doc["foodState"] = !doc["foodState"].as<bool>();
     }
-
-    
 
     String message;
 
