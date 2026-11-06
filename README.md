@@ -2,7 +2,7 @@
 
 ## 📌 Sobre o projeto
 
-O **SmartPet** é um projeto acadêmico desenvolvido utilizando ESP32, com o objetivo de criar um sistema inteligente para auxiliar no controle da alimentação de animais de estimação.
+O SmartPet é um projeto acadêmico desenvolvido utilizando ESP32, com o objetivo de criar um sistema inteligente para auxiliar no controle da alimentação de animais de estimação.
 
 O projeto utiliza comunicação MQTT para transmitir informações entre dispositivos ESP32, permitindo compartilhar estados, horários de alimentação e comandos por meio de um broker.
 
