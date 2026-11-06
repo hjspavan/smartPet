@@ -1,14 +1,3 @@
-//*============================================|
-//* Projeto: projeto mqtt - em dupla           |
-//* Descrição: Alimentação de pet              |
-//* Autor: Gabriel Pedrão e Henrique Jordão    |
-//* Data: 04/11/2026                           |
-//* Componentes:                               |
-//* - ESP 32                                   |
-//* - LED                                      |
-//* - LCD 20x4                                 |
-//* - Botão                                    |
-//*============================================|
 
 #include <Arduino.h>
 #include <WiFi.h>
@@ -19,104 +8,143 @@
 
 const char *ssid = "SENAI EDUCACIONAL";
 const char *password = "info@134";
+
 const char *BROKER = "broker.emqx.io";
 const int PORTA = 1883;
-const char *TOPICO_SUB = "senai134/esp32/SmartPet/comando"; //* onde envio o comando
-const char *TOPICO_PUB = "senai134/esp32/SmartPet/status";  //* onde ele vai escutar o status
+
+const char *TOPICO_SUB = "senai134/esp32/SmartPet/comando";
+const char *TOPICO_PUB = "senai134/esp32/SmartPet/status";
+
 String id;
 
 WiFiClient espClient;
 PubSubClient mqtt(espClient);
 
+void publishStatus();
+void conectMQTT();
+
 void setup()
 {
-  Serial.begin(115200);
-  WiFi.begin(ssid, password);
+    Serial.begin(115200);
 
-  configTime(-3 * 3600, 0, "a.st1.ntp.br", "pool.ntp.org");
+    WiFi.begin(ssid, password);
 
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    Serial.print(".");
-    delay(500);
-  }
+    while (WiFi.status() != WL_CONNECTED)
+    {
+        Serial.print(".");
+        delay(500);
+    }
 
-  Serial.println("Conectado com sucesso.");
-  Serial.printf("\n\rConectando ao broker %s", BROKER);
+    Serial.println("\nWi-Fi conectado!");
 
-  mqtt.setServer(BROKER, PORTA);
+    configTime(-3 * 3600, 0, "a.st1.ntp.br", "pool.ntp.org");
 
-  id = "esp32-" + String((uint32_t)ESP.getEfuseMac(), HEX);
-  Serial.printf("Id do dispositivo: %s \n\r", id.c_str());
+    mqtt.setServer(BROKER, PORTA);
+    mqtt.setCallback(callback);
 
-  bool conectadoAoBroker;
-  conectadoAoBroker = mqtt.connect(id.c_str());
+    id = "esp32-" + String((uint32_t)ESP.getEfuseMac(), HEX);
 
-  if (conectadoAoBroker)
-  {
-    Serial.printf("Conectado ao Broker com sucesso.");
-    mqtt.subscribe(TOPICO_SUB);
-    Serial.printf("\n\rTópico: %s", TOPICO_SUB);
-  }
-  else
-  {
-    Serial.printf("Erro ao conectar: %s\n\r", BROKER);
-    Serial.print("Falha: ");
-    Serial.print(mqtt.state());
-  }
+    Serial.printf("ID do dispositivo: %s\n", id.c_str());
+
+    conectMQTT();
 }
 
 void loop()
 {
-  mqtt.loop();
+    mqtt.loop();
 
-  unsigned long interval = 5000;
-  unsigned long currentMillis = millis();
-  static unsigned long lastMillis = 0;
+    unsigned long currentMillis = millis();
 
-  if (currentMillis - lastMillis >= interval)
-  {
-    lastMillis = currentMillis;
+    static unsigned long lastReconnect = 0;
 
-    if (mqtt.connected())
+    if (!mqtt.connected() && currentMillis - lastReconnect >= 5000)
     {
-      struct tm timeinfo;
-
-      if (getLocalTime(&timeinfo))
-      {
-        time_t now = mktime(&timeinfo);
-        time_t nextFeedingTime = now + 3 * 60 * 60; // Adiciona 3 horas ao horário atual
-
-        struct tm nextTimeinfo;
-        localtime_r(&nextFeedingTime, &nextTimeinfo);
-
-        char horario[6];
-        strftime(horario, sizeof(horario), "%H:%M", &timeinfo);
-
-        char horarioNextFeeding[6];
-        strftime(horarioNextFeeding, sizeof(horarioNextFeeding), "%H:%M", &nextTimeinfo);
-
-        JsonDocument doc;
-
-        doc["ledState"] = true;
-        doc["foodState"] = true;
-        doc["lastFeedingTime"] = horario;
-        doc["nextFeedingTime"] = horarioNextFeeding; // Adiciona 3 horas ao horário atual
-
-        String message;
-        serializeJson(doc, message);
-
-        if (mqtt.publish(TOPICO_PUB, message.c_str()))
-        {
-          Serial.println("Status do pet publicado!");
-          Serial.println(message);
-        }
-        else
-        {
-          Serial.println("Erro ao publicar status!");
-          Serial.println(mqtt.state());
-        }
-      }
+        lastReconnect = currentMillis;
+        conectMQTT();
     }
-  }
+
+    static unsigned long lastMillis = 0;
+
+    if (currentMillis - lastMillis >= 5000)
+    {
+        lastMillis = currentMillis;
+
+        if (mqtt.connected())
+        {
+            publishStatus();
+        }
+    }
 }
+
+void conectMQTT()
+{
+    Serial.printf("Conectando ao broker %s...\n", BROKER);
+
+    if (mqtt.connect(id.c_str()))
+    {
+        Serial.println("Conectado ao broker!");
+
+        mqtt.subscribe(TOPICO_SUB);
+
+        Serial.printf("Inscrito no tópico: %s\n", TOPICO_SUB);
+    }
+    else
+    {
+        Serial.print("Erro ao conectar: ");
+        Serial.println(mqtt.state());
+    }
+}
+
+void publishStatus()
+{
+    if (!mqtt.connected())
+        return;
+
+    struct tm timeinfo;
+
+    if (!getLocalTime(&timeinfo, 10000))
+    {
+        Serial.println("Erro ao obter horário NTP!");
+        return;
+    }
+
+    time_t now = mktime(&timeinfo);
+
+    time_t nextFeedingTime = now + (3 * 60 * 60);
+
+    struct tm nextTimeinfo;
+
+    localtime_r(&nextFeedingTime, &nextTimeinfo);
+
+    char horario[6];
+
+    strftime(horario, sizeof(horario), "%H:%M", &timeinfo);
+
+    char horarioNextFeeding[6];
+
+    strftime(horarioNextFeeding, sizeof(horarioNextFeeding), "%H:%M", &nextTimeinfo);
+
+    JsonDocument doc;
+
+    doc["ledState"] = true;
+    doc["foodState"] = true;
+    doc["lastFeedingTime"] = horario;
+    doc["nextFeedingTime"] = horarioNextFeeding;
+
+    String message;
+
+    serializeJson(doc, message);
+
+    if (mqtt.publish(TOPICO_PUB, message.c_str()))
+    {
+        Serial.println("Status do pet publicado!");
+        Serial.println(message);
+    }
+    else
+    {
+        Serial.println("Erro ao publicar status!");
+        Serial.println(mqtt.state());
+    }
+}
+
+
