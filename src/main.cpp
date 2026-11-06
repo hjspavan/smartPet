@@ -17,9 +17,6 @@
 #include <time.h>
 #include <Botao.h>
 
-
-void publishStatus();
-
 const char *ssid = "SENAI EDUCACIONAL";
 const char *password = "info@134";
 const char *BROKER = "broker.emqx.io";
@@ -58,7 +55,8 @@ void setup()
   if (conectadoAoBroker)
   {
     Serial.printf("Conectado ao Broker com sucesso.");
-    Serial.printf("\n\rTópico: %s", TOPICO_PUB);
+    mqtt.subscribe(TOPICO_SUB);
+    Serial.printf("\n\rTópico: %s", TOPICO_SUB);
   }
   else
   {
@@ -66,7 +64,6 @@ void setup()
     Serial.print("Falha: ");
     Serial.print(mqtt.state());
   }
-
 }
 
 void loop()
@@ -80,16 +77,8 @@ void loop()
   if (currentMillis - lastMillis >= interval)
   {
     lastMillis = currentMillis;
-    publishStatus();
- }
- 
-}
 
-
-
-void publishStatus()
-{
-   if (mqtt.connected())
+    if (mqtt.connected())
     {
       struct tm timeinfo;
 
@@ -106,27 +95,27 @@ void publishStatus()
 
         char horarioNextFeeding[6];
         strftime(horarioNextFeeding, sizeof(horarioNextFeeding), "%H:%M", &nextTimeinfo);
-  
-      
-      JsonDocument doc;
 
-      doc["ledState"] = true;
-      doc["foodState"] = true;
-      doc["lastFeedingTime"] = horario;
-      doc["nextFeedingTime"] = horarioNextFeeding; 
+        JsonDocument doc;
 
-      String message;
-      serializeJson(doc, message);
+        doc["ledState"] = true;
+        doc["foodState"] = true;
+        doc["lastFeedingTime"] = horario;
+        doc["nextFeedingTime"] = horarioNextFeeding; // Adiciona 3 horas ao horário atual
 
-      if (mqtt.publish(TOPICO_PUB, message.c_str()))
-      {
-        Serial.println("Status do pet publicado!");
-        Serial.println(message);
-      }
-      else
-      {
-        Serial.println("Erro ao publicar status!" );
-        Serial.println(mqtt.state());
+        String message;
+        serializeJson(doc, message);
+
+        if (mqtt.publish(TOPICO_PUB, message.c_str()))
+        {
+          Serial.println("Status do pet publicado!");
+          Serial.println(message);
+        }
+        else
+        {
+          Serial.println("Erro ao publicar status!");
+          Serial.println(mqtt.state());
+        }
       }
     }
   }
