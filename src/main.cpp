@@ -15,9 +15,9 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <time.h>
+#include <Botao.h>
 
-void callback(char *, byte *, unsigned int);
-void tratarJson(String);
+
 
 const char *ssid = "SENAI EDUCACIONAL";
 const char *password = "info@134";
@@ -47,7 +47,6 @@ void setup()
   Serial.printf("\n\rConectando ao broker %s", BROKER);
 
   mqtt.setServer(BROKER, PORTA);
-  mqtt.setCallback(callback);
 
   id = "esp32-" + String((uint32_t)ESP.getEfuseMac(), HEX);
   Serial.printf("Id do dispositivo: %s \n\r", id.c_str());
@@ -68,25 +67,6 @@ void setup()
     Serial.print(mqtt.state());
   }
 
-  if (mqtt.connected())
-  {
-    Serial.println("Conectado ao broker MQTT.");
-    mqtt.subscribe(TOPICO_SUB);
-  }
-  else
-  {
-    Serial.print("Desconectado. tentando reconectar...");
-    if (mqtt.connect(id.c_str()))
-    {
-      Serial.println("Reconectado ao broker MQTT.");
-      mqtt.subscribe(TOPICO_SUB);
-    }
-    else
-    {
-      Serial.print("Falha ao reconectar. Estado: ");
-      Serial.println(mqtt.state());
-    }
-  }
 }
 
 void loop()
@@ -107,18 +87,25 @@ void loop()
 
       if (getLocalTime(&timeinfo))
       {
-        char horario[6];
+        time_t now = mktime(&timeinfo);
+        time_t nextFeedingTime = now + 3 * 60 * 60; // Adiciona 3 horas ao horário atual
 
+        struct tm nextTimeinfo;
+        localtime_r(&nextFeedingTime, &nextTimeinfo);
+
+        char horario[6];
         strftime(horario, sizeof(horario), "%H:%M", &timeinfo);
 
-        Serial.println(horario);
+        char horarioNextFeeding[6];
+        strftime(horarioNextFeeding, sizeof(horarioNextFeeding), "%H:%M", &nextTimeinfo);
+  
       
       JsonDocument doc;
 
       doc["ledState"] = true;
       doc["foodState"] = true;
       doc["lastFeedingTime"] = horario;
-      doc["nextFeedingTime"] = horario + 3*60*60; // Adiciona 3 horas ao horário atual
+      doc["nextFeedingTime"] = horarioNextFeeding; // Adiciona 3 horas ao horário atual
 
       String message;
       serializeJson(doc, message);
@@ -130,38 +117,13 @@ void loop()
       }
       else
       {
-        Serial.println("Erro ao publicar status!");
+        Serial.println("Erro ao publicar status!" );
+        Serial.println(mqtt.state());
       }
     }
   }
  }
 }
 
-void callback(char *topic, byte *payload, unsigned int length)
-{
-  Serial.print("Mensagem recebida no tópico: ");
-  Serial.println(topic);
 
-  String message;
-  for (int i = 0; i < length; i++)
-  {
-    message += (char)payload[i];
-  }
 
-  Serial.printf("Mensagem: %s\n\r", message.c_str());
-  tratarJson(message);
-}
-
-void tratarJson(String message)
-{
-  JsonDocument doc;
-  DeserializationError error = deserializeJson(doc, message);
-
-  if (error)
-  {
-    Serial.printf("Erro ao desserializar o JSON: %s\n\r", error.c_str());
-    return;
-  }
-  bool ledState = doc["ledState"].as<bool>();
-  bool foodState = doc["foodState"].as<bool>();
-}
