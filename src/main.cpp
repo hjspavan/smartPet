@@ -6,9 +6,7 @@
 #include <time.h>
 #include "redes.h"
 
-
 String id;
-
 WiFiClient espClient;
 PubSubClient mqtt(espClient);
 
@@ -33,7 +31,6 @@ void setup()
 
     mqtt.setServer(BROKER, PORTA);
     
-
     id = "esp32-" + String((uint32_t)ESP.getEfuseMac(), HEX);
 
     Serial.printf("ID do dispositivo: %s\n", id.c_str());
@@ -88,7 +85,6 @@ void conectMQTT()
         Serial.println(mqtt.state());
     }
 }
-
 
 void publishStatus()
 {
