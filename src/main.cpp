@@ -9,9 +9,10 @@
 String id;
 WiFiClient espClient;
 PubSubClient mqtt(espClient);
-
 void publishStatus();
 void conectMQTT();
+bool ledState = false;
+bool foodState = false;
 
 void setup()
 {
@@ -57,6 +58,8 @@ void loop()
     if (currentMillis - lastMillis >= 10000)
     {
         lastMillis = currentMillis;
+        ledState = !ledState;
+        foodState = !foodState;
 
         if (mqtt.connected())
         {
@@ -115,10 +118,19 @@ void publishStatus()
     strftime(horarioNextFeeding, sizeof(horarioNextFeeding), "%H:%M", &nextTimeinfo);
     JsonDocument doc;
 
-    doc["ledState"] = true;
-    doc["foodState"] = true;
+    doc["ledState"] = ledState;
+    doc["foodState"] = foodState;
     doc["lastFeedingTime"] = horario;
     doc["nextFeedingTime"] = horarioNextFeeding;
+
+    unsigned int currentMillis = millis();
+    static unsigned int lastMillis = 0;
+    if (currentMillis - lastMillis >= 5000)
+    {
+        lastMillis = currentMillis;
+        doc["ledState"] = !doc["ledState"].as<bool>();
+        doc["foodState"] = !doc["foodState"].as<bool>();
+    }
 
     String message;
 
