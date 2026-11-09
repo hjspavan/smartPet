@@ -97,6 +97,7 @@ void conectMQTT()
     }
 }
 
+
 void publishStatus()
 {
     if (!mqtt.connected())
@@ -106,7 +107,7 @@ void publishStatus()
 
     if (!getLocalTime(&timeinfo, 10000))
     {
-        Serial.println("Erro ao obter horário NTP!");
+        Serial.println("Erro ao obter horario NTP!");
         return;
     }
 
@@ -119,10 +120,9 @@ void publishStatus()
     localtime_r(&nextFeedingTime, &nextTimeinfo);
 
     char horario[6];
+    char horarioNextFeeding[6];
 
     strftime(horario, sizeof(horario), "%H:%M", &timeinfo);
-
-    char horarioNextFeeding[6];
 
     strftime(horarioNextFeeding, sizeof(horarioNextFeeding), "%H:%M", &nextTimeinfo);
 
@@ -132,19 +132,6 @@ void publishStatus()
     doc["foodState"] = true;
     doc["lastFeedingTime"] = horario;
     doc["nextFeedingTime"] = horarioNextFeeding;
-
-        unsigned int currentMillis = millis();
-    static unsigned long lastMillis = 0;
-
-
-   
-    if (currentMillis - lastMillis >= 10000)
-    {
-        lastMillis = currentMillis;
-
-        doc["ledState"] = !doc["ledState"].as<bool>();
-        doc["foodState"] = !doc["foodState"].as<bool>();
-    }
 
     String message;
 
@@ -158,7 +145,6 @@ void publishStatus()
     else
     {
         Serial.println("Erro ao publicar status!");
-        Serial.println(mqtt.state());
     }
 }
 
