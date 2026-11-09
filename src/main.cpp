@@ -4,16 +4,8 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <time.h>
+#include "redes.h"
 
-
-const char *ssid = "SENAI EDUCACIONAL";
-const char *password = "info@134";
-
-const char *BROKER = "broker.emqx.io";
-const int PORTA = 1883;
-
-const char *TOPICO_SUB = "senai134/esp32/SmartPet/comando";
-const char *TOPICO_PUB = "senai134/esp32/SmartPet/status";
 
 String id;
 
@@ -65,7 +57,7 @@ void loop()
 
     static unsigned long lastMillis = 0;
 
-    if (currentMillis - lastMillis >= 5000)
+    if (currentMillis - lastMillis >= 10000)
     {
         lastMillis = currentMillis;
 
@@ -125,7 +117,6 @@ void publishStatus()
     strftime(horario, sizeof(horario), "%H:%M", &timeinfo);
 
     strftime(horarioNextFeeding, sizeof(horarioNextFeeding), "%H:%M", &nextTimeinfo);
-
     JsonDocument doc;
 
     doc["ledState"] = true;
