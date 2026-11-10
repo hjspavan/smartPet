@@ -39,9 +39,4 @@ O projeto utiliza o protocolo MQTT, baseado no modelo Publisher/Subscriber.
 - Endereço: `broker.emqx.io`
 - Porta: `1883`
 
-### Tópicos utilizados
 
-| Tópico | Função |
-|---|---|
-| `senai134/esp32/SmartPet/comando` | Recebimento de comandos |
-| `sen
